@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block page_title %}404 - Not Found{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 5rem 2rem;">
+    <h1 style="font-size: 6rem; font-weight: 800; color: var(--primary-color);">404</h1>
+    <h2 style="font-size: 2rem; margin-bottom: 1.5rem;">Oops! Page not found.</h2>
+    <p style="color: var(--text-muted); margin-bottom: 2.5rem; max-width: 500px; margin-left: auto; margin-right: auto;">
+        The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.
+    </p>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+        <i class="fas fa-home"></i> Back to Dashboard
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,60 @@
+# SpendSmart 💰
+
+**SpendSmart** is a sleek, modern Expense Tracker web application built to help you take control of your finances. track your daily spending, set monthly budgets, and visualize your financial habits with beautiful interactive charts.
+
+## ✨ Features
+
+- **Intuitive Dashboard**: At-a-glance view of your monthly and weekly spending.
+- **Interactive Visualizations**: Category-wise doughnut charts and daily spending bar charts powered by Chart.js.
+- **Budget Monitoring**: Set a monthly budget and receive visual alerts as you approach or exceed your limit.
+- **Complete Expense Management**: Easily add, edit, or delete expenses with detailed notes.
+- **Smart Filtering**: Instant search and category-based filtering to find any transaction in seconds.
+- **Secure Authentication**: Built-in user registration and login with encrypted passwords.
+- **Responsive Design**: Fully functional on desktop, tablet, and mobile devices.
+
+## 🚀 Tech Stack
+
+- **Backend**: Python, Flask
+- **Database**: SQLite with Flask-SQLAlchemy
+- **Frontend**: HTML5, Vanilla CSS3, Jinja2 Templates
+- **Charts**: Chart.js
+- **Authentication**: Flask-Login, Werkzeug
+
+## 🛠️ Installation & Setup
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/SpendSmart.git
+   cd SpendSmart
+   ```
+
+2. **Create a virtual environment**:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Run the app**:
+   ```bash
+   python3 app.py
+   ```
+   *The database will be automatically created on the first run.*
+
+5. **Open in browser**:
+   Navigate to `http://127.0.0.1:5001`
+
+## 📸 Screenshots
+
+*(Add your screenshots here)*
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+Built with ❤️ by [Your Name]

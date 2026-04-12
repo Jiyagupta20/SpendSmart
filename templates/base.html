@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpendSmart - Expense Tracker</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    {% if current_user.is_authenticated %}
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="brand">
+            <i class="fas fa-wallet"></i>
+            <span>SpendSmart</span>
+        </div>
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' }}"><i class="fas fa-th-large"></i> Dashboard</a></li>
+                <li><a href="{{ url_for('add_expense') }}" class="{{ 'active' if request.endpoint == 'add_expense' }}"><i class="fas fa-plus-circle"></i> Add Expense</a></li>
+                <li><a href="{{ url_for('expenses') }}" class="{{ 'active' if request.endpoint == 'expenses' }}"><i class="fas fa-list"></i> All Expenses</a></li>
+                <li><a href="{{ url_for('budget') }}" class="{{ 'active' if request.endpoint == 'budget' }}"><i class="fas fa-piggy-bank"></i> My Budget</a></li>
+            </ul>
+        </nav>
+        <div class="user-info">
+            <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.5rem;">Logged in as</p>
+            <p style="font-weight: 600;">{{ current_user.username }}</p>
+        </div>
+        <a href="{{ url_for('logout') }}" class="logout">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </a>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <header>
+            <h1>{% block page_title %}{% endblock %}</h1>
+            <div class="header-actions">
+                {% block header_actions %}{% endblock %}
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+    {% else %}
+        {% block auth_content %}{% endblock %}
+    {% endif %}
+
+    <script>
+        // Toggle sidebar on mobile (simplified)
+        function toggleSidebar() {
+            document.querySelector('.sidebar').classList.toggle('active');
+        }
+    </script>
+</body>
+</html>

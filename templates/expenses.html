@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block page_title %}All Expenses{% endblock %}
+
+{% block content %}
+<div class="search-filter-bar">
+    <div style="position: relative; flex: 2;">
+        <i class="fas fa-search" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+        <input type="text" id="searchInput" class="form-input" placeholder="Search by note..." style="padding-left: 2.5rem;">
+    </div>
+    
+    <div style="flex: 1;">
+        <select id="categoryFilter" class="form-input">
+            <option value="all">All Categories</option>
+            {% for category in categories %}
+            <option value="{{ category }}">{{ category }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+<div class="table-container">
+    <table id="expensesTable">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Note</th>
+                <th style="text-align: right;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for expense in expenses %}
+            <tr class="expense-row" data-category="{{ expense.category }}" data-note="{{ expense.note | lower }}">
+                <td style="font-weight: 500;">{{ expense.date.strftime('%d %b, %Y') }}</td>
+                <td>
+                    <span class="category-badge" style="background-color: {{ colors.get(expense.category, '#000000') }}20; color: {{ colors.get(expense.category, '#000000') }};">
+                        {{ expense.category }}
+                    </span>
+                </td>
+                <td style="font-weight: 700;">₹{{ "{:,.2f}".format(expense.amount) }}</td>
+                <td style="color: var(--text-muted);">{{ expense.note or '-' }}</td>
+                <td style="text-align: right;">
+                    <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+                        <a href="{{ url_for('edit_expense', id=expense.id) }}" class="btn btn-sm" style="background: #f1f5f9; color: #475569;">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{{ url_for('delete_expense', id=expense.id) }}" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this expense?')">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            <tr id="noResults" style="display: none;">
+                <td colspan="5" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                    <i class="fas fa-search" style="font-size: 2rem; margin-bottom: 1rem; display: block;"></i>
+                    No expenses found matching your criteria.
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    const searchInput = document.getElementById('searchInput');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const rows = document.querySelectorAll('.expense-row');
+    const noResultsRow = document.getElementById('noResults');
+
+    function filterExpenses() {
+        const searchTerm = searchInput.value.toLowerCase();
+        const categoryTerm = categoryFilter.value;
+        let visibleCount = 0;
+
+        rows.forEach(row => {
+            const rowCategory = row.getAttribute('data-category');
+            const rowNote = row.getAttribute('data-note');
+            
+            const matchesSearch = rowNote.includes(searchTerm);
+            const matchesCategory = categoryTerm === 'all' || rowCategory === categoryTerm;
+
+            if (matchesSearch && matchesCategory) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        noResultsRow.style.display = visibleCount === 0 ? '' : 'none';
+    }
+
+    searchInput.addEventListener('input', filterExpenses);
+    categoryFilter.addEventListener('change', filterExpenses);
+</script>
+{% endblock %}

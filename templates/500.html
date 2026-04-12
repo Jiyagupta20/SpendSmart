@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block page_title %}500 - Server Error{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 5rem 2rem;">
+    <h1 style="font-size: 6rem; font-weight: 800; color: var(--danger);">500</h1>
+    <h2 style="font-size: 2rem; margin-bottom: 1.5rem;">Something went wrong.</h2>
+    <p style="color: var(--text-muted); margin-bottom: 2.5rem; max-width: 500px; margin-left: auto; margin-right: auto;">
+        We're experiencing some technical difficulties on our end. Our developers have been notified. Please try again later.
+    </p>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+        <i class="fas fa-redo"></i> Refresh or Try Again
+    </a>
+</div>
+{% endblock %}
