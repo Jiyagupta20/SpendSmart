@@ -48,13 +48,10 @@
 5. **Open in browser**:
    Navigate to `http://127.0.0.1:5001`
 
-## 📸 Screenshots
 
-*(Add your screenshots here)*
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
-Built with ❤️ by [Jiya Gupta]
