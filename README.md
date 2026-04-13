@@ -24,7 +24,7 @@
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/SpendSmart.git
+   git clone https://github.com/Jiyagupta20/SpendSmart.git
    cd SpendSmart
    ```
 
@@ -57,4 +57,4 @@
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
-Built with ❤️ by [Your Name]
+Built with ❤️ by [Jiya Gupta]
