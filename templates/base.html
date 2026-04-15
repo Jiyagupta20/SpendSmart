@@ -28,6 +28,7 @@
                 <li><a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' }}"><i class="fas fa-th-large"></i> Dashboard</a></li>
                 <li><a href="{{ url_for('add_expense') }}" class="{{ 'active' if request.endpoint == 'add_expense' }}"><i class="fas fa-plus-circle"></i> Add Expense</a></li>
                 <li><a href="{{ url_for('expenses') }}" class="{{ 'active' if request.endpoint == 'expenses' }}"><i class="fas fa-list"></i> All Expenses</a></li>
+                <li><a href="{{ url_for('recurring_list') }}" class="{{ 'active' if request.endpoint == 'recurring_list' }}"><i class="fas fa-redo"></i> Recurring</a></li>
                 <li><a href="{{ url_for('budget') }}" class="{{ 'active' if request.endpoint == 'budget' }}"><i class="fas fa-piggy-bank"></i> My Budget</a></li>
             </ul>
         </nav>
