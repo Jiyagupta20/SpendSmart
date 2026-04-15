@@ -24,3 +24,16 @@ class Expense(db.Model):
     date = db.Column(db.Date, nullable=False, default=datetime.utcnow)
     note = db.Column(db.String(200))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+class RecurringExpense(db.Model):
+    """Template for expenses that repeat automatically"""
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    category = db.Column(db.String(50), nullable=False)
+    frequency = db.Column(db.String(20), nullable=False)  # 'Daily', 'Weekly', 'Monthly'
+    start_date = db.Column(db.Date, nullable=False)
+    last_generated_date = db.Column(db.Date)  # Track last created incident
+    note = db.Column(db.String(200))
+    is_active = db.Column(db.Boolean, default=True)
+
