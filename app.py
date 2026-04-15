@@ -1,12 +1,13 @@
-import os
-from flask import Flask, render_template, redirect, url_for, request, flash, jsonify
+import csv
+import io
+from flask import Flask, render_template, redirect, url_for, request, flash, jsonify, make_response
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date as py_date
 from sqlalchemy import func
 
 # Local imports
-from database import db, User, Expense
+from database import db, User, Expense, RecurringExpense
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'spendsmart-secret-key-12345'
@@ -36,6 +37,59 @@ CATEGORY_COLORS = {
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+def process_recurring_expenses(user_id):
+    """Checks for due recurring expenses and generates single Expense entries"""
+    today = py_date.today()
+    recurring_profiles = RecurringExpense.query.filter_by(user_id=user_id, is_active=True).all()
+    
+    new_expenses_count = 0
+    for profile in recurring_profiles:
+        # Determine the starting point for generation
+        current_date = profile.last_generated_date if profile.last_generated_date else profile.start_date
+        
+        while True:
+            # Calculate next due date
+            if profile.frequency == 'Daily':
+                next_date = current_date + timedelta(days=1)
+            elif profile.frequency == 'Weekly':
+                next_date = current_date + timedelta(weeks=1)
+            elif profile.frequency == 'Monthly':
+                # Move to the same day next month
+                month = current_date.month
+                year = current_date.year + (month // 12)
+                month = (month % 12) + 1
+                try:
+                    next_date = current_date.replace(year=year, month=month)
+                except ValueError:
+                    # Handle cases like Jan 31st -> Feb (non-existent 30th/31st)
+                    # For simplicity, move to the last day of the next month
+                    if month == 12:
+                        next_date = py_date(year+1, 1, 1) - timedelta(days=1)
+                    else:
+                        next_date = py_date(year, month + 1, 1) - timedelta(days=1)
+            else:
+                break
+
+            if next_date > today:
+                break
+                
+            # Create the expense record
+            new_expense = Expense(
+                user_id=user_id,
+                amount=profile.amount,
+                category=profile.category,
+                date=next_date,
+                note=f"[Recurring] {profile.note}" if profile.note else "[Recurring]"
+            )
+            db.session.add(new_expense)
+            profile.last_generated_date = next_date
+            current_date = next_date
+            new_expenses_count += 1
+            
+    if new_expenses_count > 0:
+        db.session.commit()
+    return new_expenses_count
 
 # --- ROUTES ---
 
@@ -93,6 +147,11 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
+    # Process any due recurring expenses
+    new_count = process_recurring_expenses(current_user.id)
+    if new_count > 0:
+        flash(f'Generated {new_count} automated expenses.', 'info')
+
     # Calculate Monthly Spending
     today = datetime.now()
     first_of_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -155,21 +214,36 @@ def add_expense():
         category = request.form.get('category')
         date_str = request.form.get('date')
         note = request.form.get('note')
+        is_recurring = request.form.get('is_recurring') == 'on'
+        frequency = request.form.get('frequency')
         
         date_obj = datetime.strptime(date_str, '%Y-%m-%d').date()
         
-        new_expense = Expense(
-            user_id=current_user.id,
-            amount=amount,
-            category=category,
-            date=date_obj,
-            note=note
-        )
-        db.session.add(new_expense)
-        db.session.commit()
-        
-        flash('Expense added successfully!', 'success')
-        return redirect(url_for('dashboard'))
+        if is_recurring:
+            new_recurring = RecurringExpense(
+                user_id=current_user.id,
+                amount=amount,
+                category=category,
+                frequency=frequency,
+                start_date=date_obj,
+                note=note
+            )
+            db.session.add(new_recurring)
+            db.session.commit()
+            flash('Recurring expense pattern saved!', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            new_expense = Expense(
+                user_id=current_user.id,
+                amount=amount,
+                category=category,
+                date=date_obj,
+                note=note
+            )
+            db.session.add(new_expense)
+            db.session.commit()
+            flash('Expense added successfully!', 'success')
+            return redirect(url_for('dashboard'))
         
     return render_template('add_expense.html', categories=CATEGORIES, today=datetime.now().strftime('%Y-%m-%d'))
 
@@ -219,6 +293,46 @@ def budget():
         return redirect(url_for('dashboard'))
         
     return render_template('budget.html')
+
+@app.route('/export/csv')
+@login_required
+def export_csv():
+    """Exports user expenses to a CSV file"""
+    user_expenses = Expense.query.filter_by(user_id=current_user.id).order_by(Expense.date.desc()).all()
+    
+    # Use StringIO to create CSV in memory
+    si = io.StringIO()
+    cw = csv.writer(si)
+    
+    # Write header
+    cw.writerow(['Date', 'Category', 'Amount', 'Note'])
+    
+    # Write data
+    for exp in user_expenses:
+        cw.writerow([exp.date.strftime('%Y-%m-%d'), exp.category, exp.amount, exp.note])
+    
+    output = make_response(si.getvalue())
+    output.headers["Content-Disposition"] = "attachment; filename=expenses_export.csv"
+    output.headers["Content-type"] = "text/csv"
+    return output
+
+@app.route('/recurring')
+@login_required
+def recurring_list():
+    """Lists all active recurring expense profiles"""
+    profiles = RecurringExpense.query.filter_by(user_id=current_user.id).all()
+    return render_template('recurring.html', profiles=profiles)
+
+@app.route('/recurring/delete/<int:id>')
+@login_required
+def delete_recurring(id):
+    """Deletes a recurring expense profile"""
+    profile = RecurringExpense.query.get_or_404(id)
+    if profile.user_id == current_user.id:
+        db.session.delete(profile)
+        db.session.commit()
+        flash('Recurring expense deleted.', 'success')
+    return redirect(url_for('recurring_list'))
 
 # --- ERROR HANDLERS ---
 @app.errorhandler(404)
