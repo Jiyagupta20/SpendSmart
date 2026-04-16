@@ -1,24 +1,49 @@
 import csv
 import io
+import logging
+from logging.handlers import RotatingFileHandler
+import os
 from flask import Flask, render_template, redirect, url_for, request, flash, jsonify, make_response
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta, date as py_date
 from sqlalchemy import func
+from flask_migrate import Migrate
+from dotenv import load_dotenv
 
 # Local imports
 from database import db, User, Expense, RecurringExpense
 
+# Load environment variables
+load_dotenv()
+
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'spendsmart-secret-key-12345'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///spendsmart.db'
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-dev-key')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///spendsmart.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Initialize DB and Login Manager
+# --- LOGGING SETUP ---
+if not os.path.exists('logs'):
+    os.mkdir('logs')
+file_handler = RotatingFileHandler('logs/spendsmart.log', maxBytes=10240, backupCount=10)
+file_handler.setFormatter(logging.Formatter(
+    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+))
+file_handler.setLevel(logging.INFO)
+app.logger.addHandler(file_handler)
+app.logger.setLevel(logging.INFO)
+app.logger.info('SpendSmart startup')
+
+# Initialize DB, Migrate and Login Manager
 db.init_app(app)
+migrate = Migrate(app, db)
 login_manager = LoginManager()
 login_manager.login_view = 'login'
 login_manager.init_app(app)
+
+# Register API Blueprint
+from api_routes import api_bp
+app.register_blueprint(api_bp)
 
 # --- CONFIGURATION ---
 CATEGORIES = ["Food", "Travel", "Shopping", "Bills", "Entertainment", "Health", "Other"]
@@ -130,10 +155,13 @@ def login():
         if user:
             if check_password_hash(user.password_hash, password):
                 login_user(user)
+                app.logger.info(f'User {email} logged in successfully')
                 return redirect(url_for('dashboard'))
             else:
+                app.logger.warning(f'Failed login attempt for {email}: Incorrect password')
                 flash('Incorrect password. Please try again.', 'danger')
         else:
+            app.logger.warning(f'Failed login attempt for {email}: User not found')
             flash(f'No account found with email: {email}', 'danger')
             
     return render_template('login.html')
@@ -147,11 +175,6 @@ def logout():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    # Process any due recurring expenses
-    new_count = process_recurring_expenses(current_user.id)
-    if new_count > 0:
-        flash(f'Generated {new_count} automated expenses.', 'info')
-
     # Calculate Monthly Spending
     today = datetime.now()
     first_of_month = today.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
@@ -343,8 +366,22 @@ def page_not_found(e):
 def internal_server_error(e):
     return render_template('500.html'), 500
 
+# --- CLI COMMANDS ---
+@app.cli.command("process-recurring")
+def process_recurring_command():
+    """CLI command to process recurring expenses for all users"""
+    app.logger.info("Starting background processing for recurring expenses")
+    users = User.query.all()
+    total_generated = 0
+    for user in users:
+        count = process_recurring_expenses(user.id)
+        if count > 0:
+            total_generated += count
+            app.logger.info(f"Generated {count} expenses for user_id: {user.id}")
+    
+    app.logger.info(f"Background processing finished. Total generated: {total_generated}")
+    print(f"Processed recurring expenses. Total generated: {total_generated}")
+
 # --- INITIALIZATION ---
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True, port=5001)

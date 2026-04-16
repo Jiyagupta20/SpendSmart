@@ -19,3 +19,5 @@ include/
 .vscode/
 .idea/
 .DS_Store
+.env
+logs/
