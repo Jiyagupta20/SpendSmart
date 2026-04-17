@@ -7,7 +7,7 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Main CSS -->
@@ -17,39 +17,35 @@
 </head>
 <body>
     {% if current_user.is_authenticated %}
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="brand">
-            <i class="fas fa-wallet"></i>
-            <span>SpendSmart</span>
-        </div>
+    <!-- Top Navigation -->
+    <header class="top-nav">
+        <a href="{{ url_for('dashboard') }}" class="brand">
+            <svg width="60" height="60" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                <!-- Left Hand Side (Brain Hemisphere - Pure White) -->
+                <path d="M240 80c-44.2 0-80 35.8-80 80 0 16.4 4.9 31.7 13.3 44.4-18.4 12.6-30.5 33.6-30.5 57.6 0 24 12.1 45 30.5 57.6-8.4 12.7-13.3 28-13.3 44.4 0 44.2 35.8 80 80 80V80z" fill="white"/>
+                
+                <!-- Right Hand Side (Banknote/Card - Slightly Translucent/Greyish White) -->
+                <rect x="256" y="110" width="160" height="292" rx="35" fill="white" opacity="0.6"/>
+                <!-- Internal Lines -->
+                <rect x="290" y="160" width="90" height="15" rx="7" fill="white" opacity="0.4"/>
+                <circle cx="335" cy="256" r="35" fill="white" opacity="0.3"/>
+                <rect x="290" y="337" width="90" height="15" rx="7" fill="white" opacity="0.4"/>
+            </svg>
+            <span style="font-weight: 800; font-size: 2.4rem; letter-spacing: -1px;">SpendSmart</span>
+        </a>
         <nav>
             <ul>
-                <li><a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' }}"><i class="fas fa-th-large"></i> Dashboard</a></li>
-                <li><a href="{{ url_for('add_expense') }}" class="{{ 'active' if request.endpoint == 'add_expense' }}"><i class="fas fa-plus-circle"></i> Add Expense</a></li>
-                <li><a href="{{ url_for('expenses') }}" class="{{ 'active' if request.endpoint == 'expenses' }}"><i class="fas fa-list"></i> All Expenses</a></li>
-                <li><a href="{{ url_for('recurring_list') }}" class="{{ 'active' if request.endpoint == 'recurring_list' }}"><i class="fas fa-redo"></i> Recurring</a></li>
-                <li><a href="{{ url_for('budget') }}" class="{{ 'active' if request.endpoint == 'budget' }}"><i class="fas fa-piggy-bank"></i> My Budget</a></li>
+                <li><a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' }}"><i class="fas fa-table-cells-large"></i> Dashboard <i class="fas fa-chevron-down caret"></i></a></li>
+                <li><a href="{{ url_for('add_expense') }}" class="{{ 'active' if request.endpoint == 'add_expense' }}"><i class="fas fa-square-plus"></i> Add Expense <i class="fas fa-chevron-down caret"></i></a></li>
+                <li><a href="{{ url_for('expenses') }}" class="{{ 'active' if request.endpoint == 'expenses' }}"><i class="fas fa-list"></i> All Expense <i class="fas fa-chevron-down caret"></i></a></li>
+                <li><a href="{{ url_for('recurring_list') }}" class="{{ 'active' if request.endpoint == 'recurring_list' }}"><i class="fas fa-arrows-rotate"></i> Recurring <i class="fas fa-chevron-down caret"></i></a></li>
+                <li><a href="{{ url_for('budget') }}" class="{{ 'active' if request.endpoint == 'budget' }}"><i class="fas fa-sack-dollar"></i> My Budget <i class="fas fa-chevron-down caret"></i></a></li>
             </ul>
         </nav>
-        <div class="user-info">
-            <p style="font-size: 0.8rem; color: #94a3b8; margin-bottom: 0.5rem;">Logged in as</p>
-            <p style="font-weight: 600;">{{ current_user.username }}</p>
-        </div>
-        <a href="{{ url_for('logout') }}" class="logout">
-            <i class="fas fa-sign-out-alt"></i> Logout
-        </a>
-    </aside>
+    </header>
 
     <!-- Main Content -->
     <main class="main-content">
-        <header>
-            <h1>{% block page_title %}{% endblock %}</h1>
-            <div class="header-actions">
-                {% block header_actions %}{% endblock %}
-            </div>
-        </header>
-
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}
@@ -60,6 +56,19 @@
 
         {% block content %}{% endblock %}
     </main>
+
+    <!-- Bottom Controls -->
+    <div class="bottom-controls">
+        <div class="user-badge">
+            <span class="user-label">Logged in as: <strong>{{ current_user.username }}</strong></span>
+            <a href="{{ url_for('logout') }}" class="pill-btn btn-logout">
+                <i class="fas fa-right-from-bracket"></i> Logout
+            </a>
+        </div>
+        <a href="{{ url_for('add_expense') }}" class="pill-btn btn-fab">
+            <i class="fas fa-plus"></i> Add Expense
+        </a>
+    </div>
     {% else %}
         {% block auth_content %}{% endblock %}
     {% endif %}
