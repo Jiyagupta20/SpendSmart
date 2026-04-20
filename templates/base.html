@@ -7,7 +7,7 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Main CSS -->
@@ -19,19 +19,20 @@
     {% if current_user.is_authenticated %}
     <!-- Top Navigation -->
     <header class="top-nav">
-        <a href="{{ url_for('dashboard') }}" class="brand">
-            <svg width="60" height="60" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                <!-- Left Hand Side (Brain Hemisphere - Pure White) -->
+        <a href="{{ url_for('dashboard') }}" class="brand" style="display: flex; align-items: center; gap: 1rem;">
+            <!-- Brain Icon (Left) -->
+            <svg width="40" height="40" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
                 <path d="M240 80c-44.2 0-80 35.8-80 80 0 16.4 4.9 31.7 13.3 44.4-18.4 12.6-30.5 33.6-30.5 57.6 0 24 12.1 45 30.5 57.6-8.4 12.7-13.3 28-13.3 44.4 0 44.2 35.8 80 80 80V80z" fill="white"/>
-                
-                <!-- Right Hand Side (Banknote/Card - Slightly Translucent/Greyish White) -->
-                <rect x="256" y="110" width="160" height="292" rx="35" fill="white" opacity="0.6"/>
-                <!-- Internal Lines -->
-                <rect x="290" y="160" width="90" height="15" rx="7" fill="white" opacity="0.4"/>
-                <circle cx="335" cy="256" r="35" fill="white" opacity="0.3"/>
-                <rect x="290" y="337" width="90" height="15" rx="7" fill="white" opacity="0.4"/>
             </svg>
-            <span style="font-weight: 800; font-size: 2.4rem; letter-spacing: -1px;">SpendSmart</span>
+            
+            <!-- Text (Center) -->
+            <span style="font-family: 'Playfair Display', serif; font-weight: 600; font-size: 2.8rem; letter-spacing: 0.5px;">Spendsmart</span>
+            
+            <!-- Banknote Icon (Right) -->
+            <svg width="40" height="40" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                <rect x="0" y="110" width="160" height="292" rx="35" fill="white" opacity="0.8"/>
+                <circle cx="80" cy="256" r="35" fill="white" opacity="0.4"/>
+            </svg>
         </a>
         <nav>
             <ul>
