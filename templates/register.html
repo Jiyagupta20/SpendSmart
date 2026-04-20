@@ -1,44 +1,56 @@
 {% extends "base.html" %}
 
 {% block auth_content %}
-<div class="auth-wrapper">
-    <div class="auth-card">
-        <div style="text-align: center; margin-bottom: 2rem;">
-            <div style="font-size: 2.5rem; color: var(--primary-color); margin-bottom: 1rem;">
-                <i class="fas fa-user-plus"></i>
-            </div>
-            <h2 style="font-size: 1.5rem; font-weight: 700;">Join SpendSmart</h2>
-            <p style="color: var(--text-muted); font-size: 0.875rem;">Start tracking your spending today</p>
-        </div>
+<div class="auth-split-container">
+    <!-- Left Side: Illustration from design -->
+    <div class="auth-illustration-side">
+    </div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-          {% if messages %}
-            {% for category, message in messages %}
-              <div class="alert alert-{{ category }}">{{ message }}</div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
+    <!-- Right Side: Form -->
+    <div class="auth-form-side">
+        <div class="auth-form-content">
+            <h2>Sign-up</h2>
+            
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
 
-        <form method="POST">
-            <div class="form-group">
-                <label for="username">Full Name</label>
-                <input type="text" name="username" id="username" class="form-input" placeholder="John Doe" required>
-            </div>
-            <div class="form-group">
-                <label for="email">Email Address</label>
-                <input type="email" name="email" id="email" class="form-input" placeholder="name@example.com" required>
-            </div>
-            <div class="form-group">
-                <label for="password">Password</label>
-                <input type="password" name="password" id="password" class="form-input" placeholder="••••••••" required>
-            </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
-                Create Account
-            </button>
-        </form>
+            <form method="POST">
+                <div class="auth-form-group">
+                    <label for="username">NAME</label>
+                    <input type="text" name="username" id="username" class="auth-input" placeholder="Enter your name" required>
+                </div>
+                <div class="auth-form-group">
+                    <label for="email">EMAIL ADDRESS</label>
+                    <input type="email" name="email" id="email" class="auth-input" placeholder="Enter your email" required>
+                </div>
+                <div class="auth-form-group">
+                    <label for="password">PASSWORD</label>
+                    <input type="password" name="password" id="password" class="auth-input" placeholder="Enter your password" required>
+                </div>
 
-        <div style="text-align: center; margin-top: 1.5rem; font-size: 0.875rem;">
-            <p>Already have an account? <a href="{{ url_for('login') }}" style="color: var(--primary-color); font-weight: 600; text-decoration: none;">Login here</a></p>
+                <div class="auth-footer" style="margin-top: 1rem; margin-bottom: 2rem; text-align: center;">
+                    <p>Already have an account? <a href="{{ url_for('login') }}">Login here.</a></p>
+                </div>
+
+                <button type="submit" class="btn-auth">
+                    Create My Account
+                </button>
+            </form>
+
+            <div class="auth-divider">
+                <span>Or Sign-up with</span>
+            </div>
+
+            <div class="social-login">
+                <button class="google-btn">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg" alt="Google" width="20">
+                </button>
+            </div>
         </div>
     </div>
 </div>
