@@ -27,15 +27,15 @@
 <!-- Key Metrics -->
 <div class="stats-grid">
     <div class="card primary">
-        <div class="label">Total This Month</div>
+        <div class="label">TOTAL THIS MONTH</div>
         <div class="value">₹{{ "{:,.2f}".format(monthly_total) }}</div>
     </div>
     <div class="card">
-        <div class="label">Total This Week</div>
+        <div class="label">TOTAL THIS WEEK</div>
         <div class="value">₹{{ "{:,.2f}".format(weekly_total) }}</div>
     </div>
     <div class="card">
-        <div class="label">Budget Remaining</div>
+        <div class="label">BUDGET REMAINING</div>
         <div class="value" style="color: {{ 'var(--danger)' if budget_left < 0 else 'var(--success)' }}">
             ₹{{ "{:,.2f}".format(budget_left if budget_left > 0 else 0) }}
         </div>
