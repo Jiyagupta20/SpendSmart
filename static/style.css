@@ -1,9 +1,19 @@
+:root {
+    --primary-color: #6366f1;
+    --primary-hover: #4f46e5;
+    --bg-color: #f8fafc;
+    --card-bg: #ffffff;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+    --danger: #ef4444;
+    --nav-gradient: linear-gradient(135deg, #000428 0%, #004e92 100%);
     --shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     
     /* Auth Tokens */
     --auth-input-bg: #b6c2d1;
-    --auth-btn: #6385b5;
-    --auth-btn-hover: #5074a3;
+    --auth-btn: #000428;
+    --auth-btn-hover: #004e92;
     --auth-text-dark: #000000;
 }
 
@@ -343,7 +353,7 @@ tr:last-child td { border-bottom: none; }
 
 .auth-form-content .subheading {
     font-family: 'Inter', sans-serif;
-    color: #6385b5;
+    color: #5074a3;
     font-size: 1.1rem;
     font-weight: 500;
     margin-top: -1.5rem;
@@ -395,14 +405,14 @@ tr:last-child td { border-bottom: none; }
     font-weight: 600;
     font-size: 1.4rem;
     cursor: pointer;
-    box-shadow: 0 10px 20px rgba(99, 133, 181, 0.4);
+    box-shadow: 0 10px 20px rgba(0, 4, 40, 0.3);
     transition: all 0.2s;
 }
 
 .btn-auth:hover {
     background-color: var(--auth-btn-hover);
     transform: translateY(-2px);
-    box-shadow: 0 15px 25px rgba(99, 133, 181, 0.5);
+    box-shadow: 0 15px 25px rgba(0, 78, 146, 0.4);
 }
 
 .auth-footer {
@@ -414,7 +424,7 @@ tr:last-child td { border-bottom: none; }
 }
 
 .auth-footer a {
-    color: #6385b5;
+    color: #004e92;
     text-decoration: none;
     font-weight: 500;
 }
@@ -445,22 +455,23 @@ tr:last-child td { border-bottom: none; }
 }
 
 .google-btn {
-    width: 50px;
-    height: 50px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
-    border: 1px solid #e2e8f0;
+    border: 1.5px solid #e2e8f0;
     display: flex;
     justify-content: center;
     align-items: center;
     background: white;
     cursor: pointer;
     transition: all 0.2s;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 .google-btn:hover {
     background: #f8fafc;
-    transform: scale(1.05);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.12);
 }
 
 @media (max-width: 900px) {
@@ -532,4 +543,55 @@ tr:last-child td { border-bottom: none; }
 .search-filter-bar .form-input {
     flex: 1;
     min-width: 200px;
+}
+
+/* Splash Screen Styles */
+.splash-body {
+    background: #000428;
+    background: radial-gradient(circle at center, #001f3f 0%, #000428 100%);
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0;
+    overflow: hidden;
+}
+
+.splash-container {
+    text-align: center;
+    transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+    animation: splashFadeIn 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.splash-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+}
+
+.splash-title {
+    font-family: 'Playfair Display', serif;
+    color: white;
+    font-size: 7.5rem;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    text-shadow: 0 0 30px rgba(255,255,255,0.1);
+}
+
+@keyframes splashFadeIn {
+    from { opacity: 0; transform: scale(0.95); filter: blur(10px); }
+    to { opacity: 1; transform: scale(1); filter: blur(0); }
+}
+
+@media (max-width: 768px) {
+    .splash-title {
+        font-size: 4rem;
+    }
+    .splash-brand svg {
+        width: 40px;
+        height: 40px;
+    }
 }
