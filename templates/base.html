@@ -20,18 +20,21 @@
     <!-- Top Navigation -->
     <header class="top-nav">
         <a href="{{ url_for('dashboard') }}" class="brand" style="display: flex; align-items: center; gap: 1rem;">
-            <!-- Brain Icon (Left) -->
+            <!-- Cloud/Brain Icon (Left) -->
             <svg width="40" height="40" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                <path d="M240 80c-44.2 0-80 35.8-80 80 0 16.4 4.9 31.7 13.3 44.4-18.4 12.6-30.5 33.6-30.5 57.6 0 24 12.1 45 30.5 57.6-8.4 12.7-13.3 28-13.3 44.4 0 44.2 35.8 80 80 80V80z" fill="white"/>
+                <path d="M240 80c-44.2 0-80 35.8-80 80 0 16.4 4.9 31.7 13.3 44.4-18.4 12.6-30.5 33.6-30.5 57.6 0 24 12.1 45 30.5 57.6-8.4 12.7-13.3 28-13.3 44.4 0 44.2 35.8 80 80 80h10V80h-10z" fill="white"/>
             </svg>
             
             <!-- Text (Center) -->
             <span style="font-family: 'Playfair Display', serif; font-weight: 600; font-size: 2.8rem; letter-spacing: 0.5px;">Spendsmart</span>
             
-            <!-- Banknote Icon (Right) -->
+            <!-- Banknote/Card Icon (Right) -->
             <svg width="40" height="40" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                <rect x="0" y="110" width="160" height="292" rx="35" fill="white" opacity="0.8"/>
-                <circle cx="80" cy="256" r="35" fill="white" opacity="0.4"/>
+                <rect x="0" y="110" width="160" height="292" rx="20" fill="white" opacity="0.9"/>
+                <circle cx="80" cy="256" r="35" fill="black" opacity="0.2"/>
+                <circle cx="80" cy="160" r="10" fill="black" opacity="0.2"/>
+                <circle cx="80" cy="352" r="10" fill="black" opacity="0.2"/>
+                <path d="M200 110v292c40 0 70-50 70-146s-30-146-70-146" fill="white" opacity="0.8"/>
             </svg>
         </a>
         <nav>
