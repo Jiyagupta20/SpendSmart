@@ -15,6 +15,14 @@
 - **System Logging**: Detailed activity logging for security and debugging.
 - **Data Export**: Export your entire expense history to a professional CSV file.
 
+## 🎨 Recent UI Enhancements
+
+- **Branded Splash Screen**: A premium 1.5-second entry experience featuring high-fidelity brand assets and a custom nebula-themed background.
+- **Royal Blue Button Design**: High-contrast, royal blue gradients with depth-shadows and glassmorphism effects for all primary actions and FABs.
+- **High-Fidelity Authentication UI**: A modern split-screen layout for Login and Register pages incorporating original design illustrations.
+- **Refined Navigation Aesthetics**: Unified brand typography (Playfair Display) and pill-style navigation components for a sleek, app-like feel.
+- **Recent Transactions Dashboard**: Integrated "Recent Expenses" tracker providing instant visibility into the latest spending habits.
+
 ## 🚀 Tech Stack
 
 - **Core**: Python, Flask
