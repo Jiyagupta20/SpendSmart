@@ -17,24 +17,27 @@
 </head>
 <body>
     {% if current_user.is_authenticated %}
+    {% else %}
+    <!-- Splash Screen (Original Design Image) -->
+    <div id="splash-screen">
+        <img src="{{ url_for('static', filename='splash.png') }}" class="splash-img" alt="SpendSmart Splash">
+    </div>
+    {% endif %}
+
+    {% if current_user.is_authenticated %}
     <!-- Top Navigation -->
     <header class="top-nav">
-        <a href="{{ url_for('dashboard') }}" class="brand" style="display: flex; align-items: center; gap: 1rem;">
-            <!-- Cloud/Brain Icon (Left) -->
+        <a href="{{ url_for('dashboard') }}" class="brand" style="display: flex; align-items: center; gap: 0.75rem;">
+            <!-- Hybrid Logo Icons (Left: Brain, Right: Banknote) -->
             <svg width="40" height="40" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+                <!-- Brain (Left) -->
                 <path d="M240 80c-44.2 0-80 35.8-80 80 0 16.4 4.9 31.7 13.3 44.4-18.4 12.6-30.5 33.6-30.5 57.6 0 24 12.1 45 30.5 57.6-8.4 12.7-13.3 28-13.3 44.4 0 44.2 35.8 80 80 80h10V80h-10z" fill="white"/>
             </svg>
-            
-            <!-- Text (Center) -->
-            <span style="font-family: 'Playfair Display', serif; font-weight: 600; font-size: 2.8rem; letter-spacing: 0.5px;">Spendsmart</span>
-            
-            <!-- Banknote/Card Icon (Right) -->
+            <span style="font-family: 'Playfair Display', serif; font-weight: 600; font-size: 2.2rem; letter-spacing: 0.5px;">SpendSmart</span>
             <svg width="40" height="40" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-                <rect x="0" y="110" width="160" height="292" rx="20" fill="white" opacity="0.9"/>
-                <circle cx="80" cy="256" r="35" fill="black" opacity="0.2"/>
-                <circle cx="80" cy="160" r="10" fill="black" opacity="0.2"/>
-                <circle cx="80" cy="352" r="10" fill="black" opacity="0.2"/>
-                <path d="M200 110v292c40 0 70-50 70-146s-30-146-70-146" fill="white" opacity="0.8"/>
+                <!-- Banknote (Right) -->
+                <rect x="0" y="110" width="160" height="292" rx="35" fill="white" opacity="0.6"/>
+                <text x="80" y="275" font-family="Arial" font-size="80" font-weight="bold" fill="white" text-anchor="middle" opacity="0.5">₹</text>
             </svg>
         </a>
         <nav>
@@ -44,6 +47,7 @@
                 <li><a href="{{ url_for('expenses') }}" class="{{ 'active' if request.endpoint == 'expenses' }}"><i class="fas fa-list"></i> All Expense <i class="fas fa-chevron-down caret"></i></a></li>
                 <li><a href="{{ url_for('recurring_list') }}" class="{{ 'active' if request.endpoint == 'recurring_list' }}"><i class="fas fa-arrows-rotate"></i> Recurring <i class="fas fa-chevron-down caret"></i></a></li>
                 <li><a href="{{ url_for('budget') }}" class="{{ 'active' if request.endpoint == 'budget' }}"><i class="fas fa-sack-dollar"></i> My Budget <i class="fas fa-chevron-down caret"></i></a></li>
+                <li><a href="{{ url_for('daily_log') }}" class="{{ 'active' if request.endpoint == 'daily_log' }}"><i class="fas fa-calendar-day"></i> Daily Log <i class="fas fa-chevron-down caret"></i></a></li>
             </ul>
         </nav>
     </header>
@@ -77,10 +81,104 @@
         {% block auth_content %}{% endblock %}
     {% endif %}
 
+    {% if current_user.is_authenticated %}
+    <!-- AI Chatbot Bubble -->
+    <div id="chat-bubble" onclick="toggleChat()">
+        <i class="fas fa-comment-dots"></i>
+    </div>
+
+    <!-- Chat Window -->
+    <div id="chat-window" class="chat-hidden">
+        <div class="chat-header">
+            <h3><i class="fas fa-robot"></i> SpendSmart AI</h3>
+            <button onclick="toggleChat()" class="chat-close">&times;</button>
+        </div>
+        <div id="chat-messages" class="chat-body">
+            <div class="message bot-message">
+                Hello! I'm your SpendSmart assistant. How can I help you today?
+            </div>
+        </div>
+        <div id="typing-indicator" class="typing-indicator hidden">
+            <span></span><span></span><span></span>
+        </div>
+        <div class="chat-footer">
+            <input type="text" id="chat-input" placeholder="Type a message..." onkeypress="handleChatKey(event)">
+            <button onclick="sendChatMessage()" id="chat-send-btn"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+    {% endif %}
+
     <script>
+        // Splash Screen Logic
+        window.addEventListener('load', () => {
+            const splash = document.getElementById('splash-screen');
+            if (splash) {
+                setTimeout(() => {
+                    splash.classList.add('hidden');
+                }, 1500);
+            }
+        });
+
         // Toggle sidebar on mobile (simplified)
         function toggleSidebar() {
             document.querySelector('.sidebar').classList.toggle('active');
+        }
+
+        // --- Chatbot Logic ---
+        function toggleChat() {
+            const chatWindow = document.getElementById('chat-window');
+            chatWindow.classList.toggle('chat-hidden');
+        }
+
+        function handleChatKey(event) {
+            if (event.key === 'Enter') {
+                sendChatMessage();
+            }
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            // Add user message
+            addMessage(message, 'user-message');
+            input.value = '';
+
+            // Show typing indicator
+            const typing = document.getElementById('typing-indicator');
+            typing.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message })
+                });
+                const data = await response.json();
+                
+                // Hide typing indicator
+                typing.classList.add('hidden');
+                
+                // Add bot message
+                if (data.reply) {
+                    addMessage(data.reply, 'bot-message');
+                } else {
+                    addMessage("I couldn't process that. Please try again.", 'bot-message');
+                }
+            } catch (error) {
+                typing.classList.add('hidden');
+                addMessage("Sorry, I'm having trouble connecting right now.", 'bot-message');
+            }
+        }
+
+        function addMessage(text, className) {
+            const messagesDiv = document.getElementById('chat-messages');
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${className}`;
+            msgDiv.innerText = text;
+            messagesDiv.appendChild(msgDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
         }
     </script>
 </body>
