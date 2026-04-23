@@ -5,6 +5,16 @@
 {% block content %}
 <div class="form-container">
     <form method="POST">
+        <!-- Voice Input Section -->
+        <div class="voice-input-container" style="margin-bottom: 2rem; text-align: center; background: #f0f4ff; padding: 1.5rem; border-radius: 1rem; border: 2px dashed #cbd5e1;">
+            <button type="button" id="mic-btn" class="mic-btn" onclick="startVoiceInput()" style="width: 60px; height: 60px; border-radius: 50%; border: none; background: var(--nav-gradient); color: white; font-size: 1.5rem; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                <i class="fas fa-microphone"></i>
+            </button>
+            <p id="mic-status" style="font-size: 0.9rem; margin-top: 0.75rem; font-weight: 600; color: #1e293b;">Click to speak (English or Hindi)</p>
+            <p style="font-size: 0.75rem; color: #64748b; margin-top: 0.25rem;">"Spent 500 on groceries today" or "Aaj khane pe 200 kharch kiye"</p>
+            <p style="font-size: 0.7rem; color: #94a3b8; margin-top: 0.5rem;">* Voice input works best on Chrome or Edge browser</p>
+        </div>
+
         <div class="form-group">
             <label for="amount">Amount (₹)</label>
             <input type="number" step="0.01" name="amount" id="amount" class="form-input" placeholder="0.00" required>
@@ -53,6 +63,97 @@
                 const checkbox = document.getElementById('is_recurring');
                 const frequencyGroup = document.getElementById('frequency_group');
                 frequencyGroup.style.display = checkbox.checked ? 'block' : 'none';
+            }
+
+            // --- Voice Input Logic ---
+            const micBtn = document.getElementById('mic-btn');
+            const micStatus = document.getElementById('mic-status');
+            let recognition;
+            let isListening = false;
+
+            function startVoiceInput() {
+                if (isListening) {
+                    recognition.stop();
+                    return;
+                }
+
+                if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                    alert("Speech Recognition not supported in this browser. Please use Chrome or Edge.");
+                    return;
+                }
+
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+
+                recognition.lang = 'en-IN';
+                recognition.interimResults = true;
+                recognition.continuous = false; // For single expense, stop after one sentence is fine
+
+                recognition.onstart = () => {
+                    isListening = true;
+                    micBtn.classList.add('listening');
+                    micBtn.style.animation = "pulse-blue 1.5s infinite";
+                    micBtn.innerHTML = '<i class="fas fa-stop"></i>';
+                    micStatus.innerText = "Listening... Speak now";
+                };
+
+                recognition.onspeechend = () => {
+                    recognition.stop();
+                };
+
+                recognition.onend = () => {
+                    isListening = false;
+                    micBtn.classList.remove('listening');
+                    micBtn.style.animation = "none";
+                    micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                };
+
+                recognition.onerror = (event) => {
+                    isListening = false;
+                    micBtn.classList.remove('listening');
+                    micBtn.style.animation = "none";
+                    micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                    micStatus.innerText = "Error: " + event.error;
+                };
+
+                recognition.onresult = (event) => {
+                    let interim_transcript = '';
+                    let final_transcript = '';
+                    
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        if (event.results[i].isFinal) {
+                            final_transcript += event.results[i][0].transcript;
+                            micStatus.innerText = `You said: "${final_transcript}"`;
+                            parseVoiceText(final_transcript);
+                        } else {
+                            interim_transcript += event.results[i][0].transcript;
+                            micStatus.innerText = `... ${interim_transcript}`;
+                        }
+                    }
+                };
+
+                recognition.start();
+            }
+
+            async function parseVoiceText(text) {
+                micStatus.innerText = "Processing voice data...";
+                try {
+                    const response = await fetch('/parse-voice', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: text })
+                    });
+                    const data = await response.json();
+
+                    if (data.amount) document.getElementById('amount').value = data.amount;
+                    if (data.category) document.getElementById('category').value = data.category;
+                    if (data.note) document.getElementById('note').value = data.note;
+                    if (data.date) document.getElementById('date').value = data.date;
+
+                    micStatus.innerHTML = "<span style='color: #059669;'><i class='fas fa-check-circle'></i> Form auto-filled!</span>";
+                } catch (error) {
+                    micStatus.innerText = "Error parsing voice data.";
+                }
             }
         </script>
         
