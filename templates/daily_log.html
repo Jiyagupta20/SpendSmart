@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block page_title %}Daily Log{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto; padding: 2rem;">
+    <h2 style="margin-bottom: 1.5rem;"><i class="fas fa-calendar-check"></i> Daily Expense Log</h2>
+    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+        Enter all your expenses for the day in natural language. You can type or speak them in English or Hindi.
+        <br><small>Example: "100 for tea, 50 for auto, 200 for lunch" or "aaj 100 chai pe aur 200 khane pe"</small>
+    </p>
+
+    <div class="form-group">
+        <textarea id="daily-text" class="form-input" rows="5" placeholder="Type your expenses here..." style="font-size: 1.1rem; line-height: 1.6;"></textarea>
+    </div>
+
+    <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 2rem; flex-wrap: wrap;">
+        <button type="button" id="process-btn" class="btn btn-primary" onclick="processDailyLog()">
+            <i class="fas fa-wand-magic-sparkles"></i> Process & Preview
+        </button>
+        <button type="button" id="daily-mic-btn" class="btn" style="background: #e2e8f0; color: #475569;" onclick="startDailyVoice()">
+            <i class="fas fa-microphone"></i> Speak
+        </button>
+        <div id="daily-status" style="font-size: 0.9rem; font-weight: 600; color: var(--primary-color);"></div>
+    </div>
+
+    <div id="preview-section" style="display: none;">
+        <h3 style="margin-bottom: 1.25rem; border-top: 1px solid var(--border-color); padding-top: 1.5rem;">Preview Extracted Expenses</h3>
+        <div class="table-container" style="margin-bottom: 1.5rem; border: 1px solid var(--border-color);">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Category</th>
+                        <th>Amount</th>
+                        <th>Note</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="preview-body">
+                    <!-- Rows added dynamically -->
+                </tbody>
+            </table>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+            <button type="button" class="btn btn-primary" onclick="saveAllExpenses()" style="flex: 2;">
+                <i class="fas fa-check-double"></i> Confirm & Save All
+            </button>
+            <button type="button" class="btn" style="background: #fee2e2; color: #991b1b; flex: 1;" onclick="clearPreview()">
+                <i class="fas fa-times"></i> Clear All
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let extractedExpenses = [];
+
+    let recognition;
+    let isListening = false;
+
+    function startDailyVoice() {
+        const textarea = document.getElementById('daily-text');
+        const status = document.getElementById('daily-status');
+        const micBtn = document.getElementById('daily-mic-btn');
+
+        if (isListening) {
+            recognition.stop();
+            return;
+        }
+
+        if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+            alert("Voice input not supported in this browser. Please use Chrome or Edge.");
+            return;
+        }
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        
+        recognition.lang = 'en-IN'; // Uses Indian English to capture Hindi words in Roman script (Hinglish)
+        recognition.interimResults = true;
+        recognition.continuous = true;
+
+        let baseText = textarea.value.trim();
+        if (baseText) baseText += ' ';
+
+        recognition.onstart = () => {
+            isListening = true;
+            status.innerText = "Listening... Speak now";
+            micBtn.style.background = "#ef4444"; // Danger red
+            micBtn.style.color = "white";
+            micBtn.innerHTML = '<i class="fas fa-stop"></i> Stop';
+            micBtn.style.animation = "pulse-red 1.5s infinite";
+        };
+
+        let final_transcript = baseText;
+
+        recognition.onresult = (event) => {
+            let interim_transcript = '';
+            let current_final = '';
+            
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    current_final += event.results[i][0].transcript + ' ';
+                } else {
+                    interim_transcript += event.results[i][0].transcript;
+                }
+            }
+            
+            final_transcript += current_final;
+            let cleanText = (final_transcript + interim_transcript).replace(/₹/g, ' ');
+            textarea.value = cleanText;
+            textarea.scrollTop = textarea.scrollHeight;
+        };
+        
+        recognition.onend = () => {
+            isListening = false;
+            status.innerText = "Microphone off.";
+            micBtn.style.background = "#e2e8f0";
+            micBtn.style.color = "#475569";
+            micBtn.innerHTML = '<i class="fas fa-microphone"></i> Speak';
+            micBtn.style.animation = "none";
+        };
+
+        recognition.onerror = (event) => {
+            console.error("Speech Recognition Error:", event.error);
+            isListening = false;
+            status.innerText = "Error capturing voice.";
+            micBtn.style.animation = "none";
+        };
+
+        recognition.start();
+    }
+
+    async function processDailyLog() {
+        const text = document.getElementById('daily-text').value.trim();
+        if (!text) {
+            alert("Please enter some text first.");
+            return;
+        }
+
+        const btn = document.getElementById('process-btn');
+        const status = document.getElementById('daily-status');
+        
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        status.innerText = "Analyzing your expenses...";
+        
+        try {
+            console.log("Sending text to /process-daily:", text);
+            const response = await fetch('/process-daily', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: text })
+            });
+            console.log("Response received:", response);
+            const data = await response.json();
+            console.log("JSON Data:", data);
+            
+            if (data.error) {
+                status.innerText = "Error: " + data.error;
+                alert("AI Error: " + data.error);
+                return;
+            }
+            extractedExpenses = data;
+            renderPreview();
+            status.innerText = `Successfully extracted ${extractedExpenses.length} expenses.`;
+        } catch (error) {
+            console.error("Fetch error:", error);
+            status.innerText = "Connection error.";
+            alert("Could not connect to the server. Please check if the backend is running.");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Process & Preview';
+        }
+    }
+
+    function renderPreview() {
+        const tbody = document.getElementById('preview-body');
+        tbody.innerHTML = '';
+        
+        if (extractedExpenses.length === 0) {
+            document.getElementById('preview-section').style.display = 'none';
+            return;
+        }
+
+        extractedExpenses.forEach((exp, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${exp.date}</td>
+                <td><span class="category-badge" style="background: #e2e8f0; color: #475569;">${exp.category}</span></td>
+                <td style="font-weight: 700;">₹${exp.amount}</td>
+                <td>${exp.note}</td>
+                <td>
+                    <button onclick="removeExpense(${index})" class="btn btn-sm" style="color: var(--danger); background: none; padding: 0.25rem;">
+                        <i class="fas fa-trash-can"></i>
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+        
+        document.getElementById('preview-section').style.display = 'block';
+        document.getElementById('preview-section').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function removeExpense(index) {
+        extractedExpenses.splice(index, 1);
+        renderPreview();
+    }
+
+    function clearPreview() {
+        if (confirm("Are you sure you want to clear the preview?")) {
+            extractedExpenses = [];
+            renderPreview();
+            document.getElementById('daily-status').innerText = "";
+        }
+    }
+
+    async function saveAllExpenses() {
+        if (!extractedExpenses.length) return;
+        
+        const status = document.getElementById('daily-status');
+        status.innerText = "Saving all expenses...";
+        
+        try {
+            const response = await fetch('/bulk-save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(extractedExpenses)
+            });
+            const data = await response.json();
+            
+            if (response.ok) {
+                alert(data.message || "Expenses saved successfully!");
+                window.location.href = "{{ url_for('dashboard') }}";
+            } else {
+                throw new Error(data.error || "Save failed");
+            }
+        } catch (error) {
+            alert("Error saving expenses: " + error.message);
+            status.innerText = "Save failed.";
+        }
+    }
+</script>
+{% endblock %}

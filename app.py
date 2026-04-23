@@ -1,3 +1,4 @@
+import anthropic
 import csv
 import io
 import logging
@@ -44,6 +45,14 @@ login_manager.init_app(app)
 # Register API Blueprint
 from api_routes import api_bp
 app.register_blueprint(api_bp)
+
+# Anthropic API Setup
+anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
+if not anthropic_key or "your_anthropic_api_key_here" in anthropic_key:
+    app.logger.warning("ANTHROPIC_API_KEY is not set. AI features will not work.")
+    ai_client = None
+else:
+    ai_client = anthropic.Anthropic(api_key=anthropic_key)
 
 # --- CONFIGURATION ---
 CATEGORIES = ["Food", "Travel", "Shopping", "Bills", "Entertainment", "Health", "Other"]
@@ -356,6 +365,167 @@ def delete_recurring(id):
         db.session.commit()
         flash('Recurring expense deleted.', 'success')
     return redirect(url_for('recurring_list'))
+
+@app.route('/chat', methods=['POST'])
+@login_required
+def chat():
+    if not ai_client:
+        return jsonify({"reply": "AI Chat is currently disabled because the API key is not set. Please add your ANTHROPIC_API_KEY to the .env file."}), 503
+    """AI Chatbot for expense management"""
+    data = request.get_json()
+    user_message = data.get('message', '')
+    
+    # Fetch recent expenses for context (last 30 days)
+    thirty_days_ago = datetime.now() - timedelta(days=30)
+    recent_expenses = Expense.query.filter(
+        Expense.user_id == current_user.id,
+        Expense.date >= thirty_days_ago.date()
+    ).order_by(Expense.date.desc()).all()
+    
+    # Format context for Claude
+    expense_context = "\n".join([
+        f"- {e.date}: {e.amount} on {e.category} ({e.note})" 
+        for e in recent_expenses
+    ])
+    
+    system_prompt = (
+        "You are a personal finance assistant for SpendSmart, an expense tracker app. "
+        "Help users understand their spending habits, give saving tips, answer questions "
+        "about their expenses, and suggest budget improvements. Keep responses short and friendly. "
+        "LANGUAGE RULE: The user may type or speak in Hindi or English or a mix of both (Hinglish). "
+        "Always understand both languages but always reply in English only. "
+        "If the user says 'aaj maine 100 rupaye khane pe kharch kiye' treat it the same as 'today I spent 100 rupees on food'."
+    )
+    
+    prompt = f"User's recent expenses (last 30 days):\n{expense_context}\n\nUser: {user_message}"
+    
+    try:
+        response = ai_client.messages.create(
+            model="claude-3-5-sonnet-20240620",
+            max_tokens=1024,
+            system=system_prompt,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        reply = response.content[0].text
+        return jsonify({"reply": reply})
+    except Exception as e:
+        app.logger.error(f"Chat error: {str(e)}")
+        return jsonify({"reply": "I'm sorry, I encountered an error. Please try again later."}), 500
+
+@app.route('/parse-voice', methods=['POST'])
+@login_required
+def parse_voice():
+    if not ai_client:
+        return jsonify({"error": "AI service not configured. Missing API key."}), 503
+    """Parse spoken expense text into JSON"""
+    data = request.get_json()
+    spoken_text = data.get('text', '')
+    
+    prompt = (
+        "The user may have spoken in Hindi, English, or Hinglish. Understand the language and extract expense details. "
+        "Return ONLY a JSON object with these fields: amount (number), category (one of: Food, Travel, Shopping, Bills, Entertainment, Health, Other), "
+        "note (string in English only), date (today's date in YYYY-MM-DD format). "
+        "Always write the note in English regardless of input language.\n"
+        f"Text: {spoken_text}"
+    )
+    
+    try:
+        response = ai_client.messages.create(
+            model="claude-3-5-sonnet-20240620",
+            max_tokens=500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        # Extract JSON from response (handling potential markdown)
+        result_text = response.content[0].text.strip()
+        if "```json" in result_text:
+            result_text = result_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in result_text:
+            result_text = result_text.split("```")[1].split("```")[0].strip()
+            
+        import json
+        parsed_data = json.loads(result_text)
+        return jsonify(parsed_data)
+    except Exception as e:
+        app.logger.error(f"Voice parse error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/daily-log')
+@login_required
+def daily_log():
+    """Render the daily log page"""
+    return render_template('daily_log.html', categories=CATEGORIES, today=datetime.now().strftime('%Y-%m-%d'))
+
+@app.route('/process-daily', methods=['POST'])
+@login_required
+def process_daily():
+    if not ai_client:
+        return jsonify({"error": "AI service not configured. Missing API key."}), 503
+    """Extract multiple expenses from a bulk text/speech"""
+    data = request.get_json()
+    text = data.get('text', '')
+    
+    prompt = (
+        "The following text is a voice-to-text transcription of a user describing their daily expenses. "
+        "The user may have spoken in Hindi, English, or Hinglish (Hindi in Roman script). "
+        "The transcription might contain phonetic or symbolic errors. "
+        "IMPORTANT: The transcription engine often makes mistakes with numbers. For example: "
+        "- 'one ₹50' or '1 ₹50' usually means 'one fifty' (150). "
+        "- 'two ₹50' means 'two fifty' (250). "
+        "- 'one ₹100' means 'one hundred' (100). "
+        "Please use common sense and context to correct these errors. "
+        "1. Understand the intended meaning and correct any transcription errors. "
+        "2. Extract ALL expenses mentioned. "
+        "3. Return ONLY a JSON array of objects. Each object must have: "
+        "amount (number), category (one of: Food, Travel, Shopping, Bills, Entertainment, Health, Other), "
+        "note (string, ALWAYS in English only), date (today's date in YYYY-MM-DD). "
+        "No matter what language the input is, always write notes in English.\n\n"
+        f"Transcription Text: {text}"
+    )
+    
+    try:
+        response = ai_client.messages.create(
+            model="claude-3-5-sonnet-20240620",
+            max_tokens=2000,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        result_text = response.content[0].text.strip()
+        if "```json" in result_text:
+            result_text = result_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in result_text:
+            result_text = result_text.split("```")[1].split("```")[0].strip()
+            
+        import json
+        expenses_list = json.loads(result_text)
+        return jsonify(expenses_list)
+    except Exception as e:
+        app.logger.error(f"Daily process error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/bulk-save', methods=['POST'])
+@login_required
+def bulk_save():
+    """Save multiple expenses at once"""
+    expenses = request.get_json()
+    if not isinstance(expenses, list):
+        return jsonify({"error": "Invalid data format"}), 400
+        
+    try:
+        for data in expenses:
+            new_expense = Expense(
+                user_id=current_user.id,
+                amount=float(data['amount']),
+                category=data['category'],
+                date=datetime.strptime(data['date'], '%Y-%m-%d').date(),
+                note=data.get('note', '')
+            )
+            db.session.add(new_expense)
+        
+        db.session.commit()
+        return jsonify({"message": f"{len(expenses)} expenses added successfully!"})
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Bulk save error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 # --- ERROR HANDLERS ---
 @app.errorhandler(404)
