@@ -4,6 +4,7 @@ import io
 import logging
 from logging.handlers import RotatingFileHandler
 import os
+import re
 from flask import Flask, render_template, redirect, url_for, request, flash, jsonify, make_response
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -55,13 +56,13 @@ else:
     ai_client = anthropic.Anthropic(api_key=anthropic_key)
 
 # --- CONFIGURATION ---
-CATEGORIES = ["Food", "Travel", "Shopping", "Bills", "Entertainment", "Health", "Other"]
+CATEGORIES = ["Food", "Travel", "Extra Expenses", "Bills", "Entertainment", "Health", "Other"]
 
 # Color mapping for charts and UI
 CATEGORY_COLORS = {
     "Food": "#FF6384",          # Pinkish Red
     "Travel": "#36A2EB",        # Blue
-    "Shopping": "#FFCE56",      # Yellow
+    "Extra Expenses": "#FFCE56",      # Yellow
     "Bills": "#4BC0C0",         # Teal
     "Entertainment": "#9966FF", # Purple
     "Health": "#FF9F40",        # Orange
@@ -366,6 +367,98 @@ def delete_recurring(id):
         flash('Recurring expense deleted.', 'success')
     return redirect(url_for('recurring_list'))
 
+def fallback_ai_parser(text):
+    """Simple rule-based parser for when AI service is unavailable"""
+    expenses = []
+    
+    # Common categories and their keywords
+    keywords = {
+        "Food": ["food", "khana", "khane", "khaya", "lunch", "dinner", "breakfast", "tea", "chai", "coffee", "restaurant", "swiggy", "zomato", "biryani", "pizza", "burger", "drink", "party"],
+        "Travel": ["travel", "auto", "taxi", "uber", "ola", "metro", "bus", "petrol", "diesel", "fare", "train", "flight", "rickshaw", "cab", "fuel"],
+        "Extra Expenses": ["shopping", "cloth", "amazon", "flipkart", "myntra", "mall", "shoe", "watch", "shirt", "jeans", "bought", "buy", "extra"],
+        "Bills": ["bill", "recharge", "electricity", "water", "rent", "wifi", "internet", "phone", "gas", "payment", "paid"],
+        "Entertainment": ["movie", "netflix", "hotstar", "game", "party", "club", "concert", "outing", "show", "ticket"],
+        "Health": ["health", "medicine", "doctor", "gym", "hospital", "test", "checkup", "tablet", "clinic"],
+    }
+
+    # Number word mapping
+    number_map = {
+        "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, 
+        "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+        "hundred": 100, "hundreds": 100,
+        "thousand": 1000, "thousands": 1000,
+        "lakh": 100000, "lakhs": 100000
+    }
+    
+    # Split by common conjunctions
+    parts = re.split(r'[,.\n]|and|aur|&', text.lower())
+    
+    today_str = py_date.today().strftime('%Y-%m-%d')
+    
+    for part in parts:
+        part = part.strip()
+        if not part:
+            continue
+            
+        # 1. Try to find digits
+        amount = 0
+        amounts = re.findall(r'(\d+(?:\.\d+)?)', part)
+        if amounts:
+            amount = float(amounts[0])
+            # Check if there's a multiplier following (e.g. "1 thousand")
+            for word, val in number_map.items():
+                if word in part and val >= 100:
+                    if re.search(rf'{amounts[0]}\s*{word}', part):
+                        amount *= val
+                        break
+        else:
+            # 2. Try to find number words if no digits
+            for word, val in number_map.items():
+                if re.search(rf'\b{word}\b', part):
+                    amount = val
+                    break
+
+        if amount > 0:
+            category = "Other"
+            
+            # Check for keywords to determine category
+            for cat, words in keywords.items():
+                if any(word in part for word in words):
+                    category = cat
+                    break
+            
+            # 3. Simple Translation/Cleaning for the note
+            # Find the specific keyword that triggered the category
+            found_keyword = ""
+            for cat, words in keywords.items():
+                for word in words:
+                    if re.search(rf'\b{word}\b', part):
+                        found_keyword = word
+                        break
+                if found_keyword: break
+
+            hindi_indicators = ["maine", "aaj", "kharch", "kiye", "pe", "mein", "rupay", "rupaya", "rupaye"]
+            is_hindi = any(word in part for word in hindi_indicators)
+            
+            if is_hindi:
+                note = found_keyword.capitalize() if found_keyword else f"{category} expense"
+            else:
+                # Remove the amount and common noise words to clean up the note
+                clean_note = part
+                if amounts: clean_note = clean_note.replace(amounts[0], "")
+                for word in ["rupees", "rupee", "rs", "in", "on", "for", "spent"]:
+                    clean_note = clean_note.replace(word, "")
+                note = clean_note.strip().capitalize() or f"{category} expense"
+            
+            expenses.append({
+                "amount": amount,
+                "category": category,
+                "note": note,
+                "date": today_str
+            })
+            
+    return expenses
+
 @app.route('/chat', methods=['POST'])
 @login_required
 def chat():
@@ -393,7 +486,7 @@ def chat():
         "Help users understand their spending habits, give saving tips, answer questions "
         "about their expenses, and suggest budget improvements. Keep responses short and friendly. "
         "LANGUAGE RULE: The user may type or speak in Hindi or English or a mix of both (Hinglish). "
-        "Always understand both languages but always reply in English only. "
+        "Always understand both languages but always reply in English translation only. "
         "If the user says 'aaj maine 100 rupaye khane pe kharch kiye' treat it the same as 'today I spent 100 rupees on food'."
     )
     
@@ -415,17 +508,23 @@ def chat():
 @app.route('/parse-voice', methods=['POST'])
 @login_required
 def parse_voice():
-    if not ai_client:
-        return jsonify({"error": "AI service not configured. Missing API key."}), 503
     """Parse spoken expense text into JSON"""
     data = request.get_json()
     spoken_text = data.get('text', '')
+
+    if not ai_client:
+        # Fallback to local parser
+        app.logger.info(f"Using fallback parser for voice: {spoken_text}")
+        expenses = fallback_ai_parser(spoken_text)
+        if expenses:
+            return jsonify(expenses[0]) # Return first extracted expense
+        return jsonify({"amount": 0, "category": "Other", "note": spoken_text, "date": py_date.today().strftime('%Y-%m-%d')})
     
     prompt = (
         "The user may have spoken in Hindi, English, or Hinglish. Understand the language and extract expense details. "
-        "Return ONLY a JSON object with these fields: amount (number), category (one of: Food, Travel, Shopping, Bills, Entertainment, Health, Other), "
-        "note (string in English only), date (today's date in YYYY-MM-DD format). "
-        "Always write the note in English regardless of input language.\n"
+        "Return ONLY a JSON object with these fields: amount (number), category (one of: Food, Travel, Extra Expenses, Bills, Entertainment, Health, Other), "
+        "note (string in English translation only), date (today's date in YYYY-MM-DD format). "
+        "Always write the note in English translation only regardless of input language.\n"
         f"Text: {spoken_text}"
     )
     
@@ -458,11 +557,15 @@ def daily_log():
 @app.route('/process-daily', methods=['POST'])
 @login_required
 def process_daily():
-    if not ai_client:
-        return jsonify({"error": "AI service not configured. Missing API key."}), 503
     """Extract multiple expenses from a bulk text/speech"""
     data = request.get_json()
     text = data.get('text', '')
+
+    if not ai_client:
+        # Fallback to local parser
+        app.logger.info(f"Using fallback parser for daily log: {text}")
+        expenses = fallback_ai_parser(text)
+        return jsonify(expenses)
     
     prompt = (
         "The following text is a voice-to-text transcription of a user describing their daily expenses. "
@@ -476,9 +579,9 @@ def process_daily():
         "1. Understand the intended meaning and correct any transcription errors. "
         "2. Extract ALL expenses mentioned. "
         "3. Return ONLY a JSON array of objects. Each object must have: "
-        "amount (number), category (one of: Food, Travel, Shopping, Bills, Entertainment, Health, Other), "
-        "note (string, ALWAYS in English only), date (today's date in YYYY-MM-DD). "
-        "No matter what language the input is, always write notes in English.\n\n"
+        "amount (number), category (one of: Food, Travel, Extra Expenses, Bills, Entertainment, Health, Other), "
+        "note (string, ALWAYS in English translation only), date (today's date in YYYY-MM-DD). "
+        "No matter what language the input is, always write notes in English translation only.\n\n"
         f"Transcription Text: {text}"
     )
     
