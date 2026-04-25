@@ -35,8 +35,14 @@
             <input type="date" name="date" id="date" class="form-input" value="{{ today }}" required>
         </div>
         
-        <div class="form-group">
-            <label for="note">Note (Optional)</label>
+        <div id="note-toggle-container" style="margin-bottom: 1.5rem;">
+            <button type="button" class="btn" style="background: none; color: var(--primary-color); padding: 0; font-size: 0.9rem; font-weight: 600;" onclick="document.getElementById('note-group').style.display = 'block'; this.style.display = 'none';">
+                <i class="fas fa-plus-circle"></i> Add Note (Optional)
+            </button>
+        </div>
+
+        <div id="note-group" class="form-group" style="display: none;">
+            <label for="note">Note</label>
             <input type="text" name="note" id="note" class="form-input" placeholder="e.g. Dinner with friends">
         </div>
         
@@ -147,7 +153,12 @@
 
                     if (data.amount) document.getElementById('amount').value = data.amount;
                     if (data.category) document.getElementById('category').value = data.category;
-                    if (data.note) document.getElementById('note').value = data.note;
+                    if (data.note) {
+                        document.getElementById('note').value = data.note;
+                        document.getElementById('note-group').style.display = 'block';
+                        const toggleBtn = document.querySelector('#note-toggle-container button');
+                        if (toggleBtn) toggleBtn.style.display = 'none';
+                    }
                     if (data.date) document.getElementById('date').value = data.date;
 
                     micStatus.innerHTML = "<span style='color: #059669;'><i class='fas fa-check-circle'></i> Form auto-filled!</span>";
