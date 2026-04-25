@@ -33,7 +33,6 @@
                         <th>Date</th>
                         <th>Category</th>
                         <th>Amount</th>
-                        <th>Note</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -81,8 +80,8 @@
         recognition.interimResults = true;
         recognition.continuous = true;
 
-        let baseText = textarea.value.trim();
-        if (baseText) baseText += ' ';
+        // Clear previous text when starting a new recording session
+        textarea.value = '';
 
         recognition.onstart = () => {
             isListening = true;
@@ -93,7 +92,7 @@
             micBtn.style.animation = "pulse-red 1.5s infinite";
         };
 
-        let final_transcript = baseText;
+        let final_transcript = '';
 
         recognition.onresult = (event) => {
             let interim_transcript = '';
@@ -190,11 +189,20 @@
                 <td>${exp.date}</td>
                 <td><span class="category-badge" style="background: #e2e8f0; color: #475569;">${exp.category}</span></td>
                 <td style="font-weight: 700;">₹${exp.amount}</td>
-                <td>${exp.note}</td>
                 <td>
-                    <button onclick="removeExpense(${index})" class="btn btn-sm" style="color: var(--danger); background: none; padding: 0.25rem;">
-                        <i class="fas fa-trash-can"></i>
-                    </button>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button onclick="toggleNoteInput(${index})" class="btn btn-sm" style="color: var(--primary-color); background: none; padding: 0.25rem;" title="Add/Edit Note">
+                            <i class="fas fa-comment-dots"></i>
+                        </button>
+                        <button onclick="removeExpense(${index})" class="btn btn-sm" style="color: var(--danger); background: none; padding: 0.25rem;" title="Remove">
+                            <i class="fas fa-trash-can"></i>
+                        </button>
+                    </div>
+                    <div id="note-container-${index}" style="display: ${exp.note ? 'block' : 'none'}; margin-top: 0.5rem;">
+                        <input type="text" class="form-input" style="font-size: 0.8rem; padding: 0.25rem 0.5rem;" 
+                               placeholder="Add a note..." value="${exp.note || ''}" 
+                               oninput="updateExpenseNote(${index}, this.value)">
+                    </div>
                 </td>
             `;
             tbody.appendChild(row);
@@ -202,6 +210,18 @@
         
         document.getElementById('preview-section').style.display = 'block';
         document.getElementById('preview-section').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function toggleNoteInput(index) {
+        const container = document.getElementById(`note-container-${index}`);
+        container.style.display = container.style.display === 'none' ? 'block' : 'none';
+        if (container.style.display === 'block') {
+            container.querySelector('input').focus();
+        }
+    }
+
+    function updateExpenseNote(index, value) {
+        extractedExpenses[index].note = value;
     }
 
     function removeExpense(index) {
