@@ -325,8 +325,25 @@ tr:last-child td { border-bottom: none; }
     flex: 1;
     background: url('/static/images/auth-side.png') left center / cover no-repeat;
     display: flex;
-    flex-direction: column;
-    padding: 3rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.auth-logo {
+    position: absolute;
+    top: 2.5rem;
+    left: 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: white;
+}
+
+.auth-logo span {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.5rem;
+    font-weight: 600;
 }
 
 .auth-form-side {
@@ -344,11 +361,12 @@ tr:last-child td { border-bottom: none; }
 }
 
 .auth-form-content h2 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Inter', sans-serif;
     font-size: 3.5rem;
     font-weight: 800;
     color: var(--auth-text-dark);
     margin-bottom: 2rem;
+    letter-spacing: -1px;
 }
 
 .auth-form-content .subheading {
@@ -395,24 +413,24 @@ tr:last-child td { border-bottom: none; }
 
 .btn-auth {
     width: 100%;
-    margin-top: 2rem;
+    margin-top: 1rem;
     padding: 1.25rem;
-    background-color: var(--auth-btn);
+    background-color: #6385b5; /* Steel Blue from design */
     color: white;
     border: none;
-    border-radius: 25px;
+    border-radius: 30px;
     font-family: 'Inter', sans-serif;
     font-weight: 600;
-    font-size: 1.4rem;
+    font-size: 1.6rem;
     cursor: pointer;
-    box-shadow: 0 10px 20px rgba(0, 4, 40, 0.3);
+    box-shadow: 0 8px 25px rgba(99, 133, 181, 0.4);
     transition: all 0.2s;
 }
 
 .btn-auth:hover {
-    background-color: var(--auth-btn-hover);
+    background-color: #5074a3;
     transform: translateY(-2px);
-    box-shadow: 0 15px 25px rgba(0, 78, 146, 0.4);
+    box-shadow: 0 12px 30px rgba(80, 116, 163, 0.5);
 }
 
 .auth-footer {
@@ -592,18 +610,7 @@ tr:last-child td { border-bottom: none; }
     to { transform: scale(1); opacity: 1; }
 }
 
-.auth-illustration-side {
-    flex: 1;
-    background-image: url('/static/auth-side.png');
-    background-size: cover;
-    background-position: center left;
-    background-repeat: no-repeat;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-}
+/* Consolidated .auth-illustration-side above */
 
 .pill-btn {
     display: inline-flex;
